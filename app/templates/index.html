@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>FormRelay - Backend для Вас</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<main class="container">
+    <h1>FormRelay</h1>
+    <p>Отримуйте заявки з HTML-форм прямо в Telegram за 30 секунд</p>
+
+    <section class="card">
+        <h2>1. Створити точку прийому</h2>
+        <div class="field">
+            <label for="title">Назва сайту / форми</label>
+            <input type="text" name="title" id="title" placeholder="Лендінг курсу" required>
+        </div>
+        <div class="field">
+            <label for="chat_id">Telegram Chat ID (<a href="https://t.me/userinfobot" target="_blank">Дізнатись ID</a>)</label>
+            <input type="text" id="chat_id" placeholder="123456789" required>
+        </div>
+        <button id="create-btn" onclick="createEndpoint()">Створити ендпоїнт</button>
+    </section>
+    <section id="result-section" class="card hidden">
+        <h2>2. Готовий HTML-код для вставки</h2>
+        <pre><code id="snippet-code"></code></pre>
+        <button onclick="copySnippet()">Скопіювати код</button>
+
+        <h3>Швидкий тест</h3>
+        <form id="live-test-form" method="POST" target="_blank">
+            <label content="Ім'я">
+                <input type="text" name="name" value="Тестовий користувач" required>
+            </label>
+            <label content="Номер телефону">
+                <input type="text" name="phone" value="+380123456789" required>
+            </label>
+            <button type="submit">Надіслати тестовий запит</button>
+        </form>
+    </section>
+</main>
+<script>
+    let currentEndpoint = "";
+
+    async function createEndpoint() {
+        const title = document.getElementById('title').value;
+        const chat_id = document.getElementById('chat_id').value;
+        if (!title || !chat_id) return alert("Заповніть усі поля");
+
+        const res = await fetch('/api/forms', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({title, telegram_chat_id: parseInt(chat_id)})
+        })
+        const data = await res.json();
+        currentEndpoint = `${window.location.origin}/f/${data.id}`;
+
+        document.getElementById('snippet-code').innerText = `<form action="${currentEndpoint}" method="POST">\n <input type="text" name="name" placeholder="Ім'я" required />\n <input type="email" name="email" placeholder="Email" required />\n <button type="submit">Надіслати</button>\n</form>`;
+        document.getElementById('live-test-form').action = currentEndpoint;
+        document.getElementById('result-section').classList.remove('hidden');
+    }
+
+    function copySnippet() {
+        navigator.clipboard.writeText(document.getElementById('snippet-code').innerText);
+        alert("Код скопійовано!");
+    }
+</script>
+</body>
+</html>
