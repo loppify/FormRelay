@@ -6,7 +6,7 @@ WORKDIR /app
 COPY app/pyproject.toml uv.lock* ./
 RUN uv sync --frozen --no-dev --no-install-project
 
-FROM python.3.11-slim-bookworm
+FROM python.3.11-slim
 
 WORKDIR  /app
 
