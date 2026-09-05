@@ -1,5 +1,4 @@
 import uuid
-from typing import Annotated
 
 from fastapi import APIRouter, Depends, status
 from pydantic import BaseModel, ConfigDict
@@ -28,9 +27,9 @@ class FormRead(BaseModel):
 
 @router.post("", response_model=FormRead, status_code=status.HTTP_201_CREATED)
 async def create_form_endpoint(
-        data: FormCreate,
-        locale: tuple[str, dict[str, str]] = Depends(get_locale),
-        db: AsyncSession = Depends(get_db),
+    data: FormCreate,
+    locale: tuple[str, dict[str, str]] = Depends(get_locale),
+    db: AsyncSession = Depends(get_db),
 ):
     current_lang, _ = locale
     lang = data.language if data.language in SUPPORTED_LANGUAGES else current_lang

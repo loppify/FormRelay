@@ -19,9 +19,7 @@ LOCALES_PATH = Path(__file__).resolve().parent.parent / "translations"
 
 
 def format_submission_message(
-        form_title: str,
-        payload: dict,
-        t: Callable[[str], str]
+    form_title: str, payload: dict, t: Callable[[str], str]
 ) -> str:
     current_time = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
 

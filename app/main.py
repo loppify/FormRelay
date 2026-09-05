@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+from typing import Annotated
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.responses import HTMLResponse
@@ -8,7 +9,6 @@ from fastapi.templating import Jinja2Templates
 from app.api.forms import router as forms_router
 from app.api.ingest import router as ingest_router
 from app.core.i18n import (
-    DEFAULT_LANGUAGE,
     SUPPORTED_LANGUAGES,
     get_locale,
 )
@@ -33,7 +33,9 @@ app.include_router(ingest_router)
 
 
 @app.get("/", response_class=HTMLResponse)
-async def render_index(request: Request, locale: tuple[str, dict[str, str]] = Depends(get_locale)):
+async def render_index(
+    request: Request, locale: Annotated[tuple[str, dict[str, str]], Depends(get_locale)]
+):
     language, translations = locale
 
     response = templates.TemplateResponse(
@@ -58,7 +60,9 @@ async def render_index(request: Request, locale: tuple[str, dict[str, str]] = De
 
 
 @app.get("/success", response_class=HTMLResponse)
-async def render_success(request: Request, locale: tuple[str, dict[str, str]] = Depends(get_locale)):
+async def render_success(
+    request: Request, locale: Annotated[tuple[str, dict[str, str]], Depends(get_locale)]
+):
     language, translations = locale
 
     response = templates.TemplateResponse(

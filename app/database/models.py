@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import BigInteger, DateTime, ForeignKey, String, func
+from sqlalchemy import JSON, BigInteger, DateTime, ForeignKey, String, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -36,7 +36,9 @@ class Submission(Base):
     form_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("forms.id", ondelete="CASCADE"), nullable=False
     )
-    payload: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    payload: Mapped[dict[str, Any]] = mapped_column(
+        JSON().with_variant(JSONB, "postgresql"), nullable=False
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

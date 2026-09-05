@@ -35,12 +35,16 @@ async def prepare_database():
 
 
 @pytest.mark.asyncio
-async def test_form_creation_and_submission():
+async def test_form_creation_and_json_submission():
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         create_res = await ac.post(
             "/api/forms",
-            json={"title": "Landing Test", "telegram_chat_id": 987654321},
+            json={
+                "title": "Landing Test",
+                "telegram_chat_id": 987654321,
+                "language": "en",
+            },
         )
         assert create_res.status_code == 201
         form_id = create_res.json()["id"]
@@ -61,6 +65,36 @@ async def test_form_creation_and_submission():
             assert mock_tg.called
             assert mock_tg.call_args[0][0] == 987654321
             assert "Ivan" in mock_tg.call_args[0][1]
+
+
+@pytest.mark.asyncio
+async def test_form_submission_html_redirect():
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        create_res = await ac.post(
+            "/api/forms",
+            json={
+                "title": "HTML Form",
+                "telegram_chat_id": 123456789,
+                "language": "uk",
+            },
+        )
+        form_id = create_res.json()["id"]
+
+        with patch(
+            "app.api.ingest.send_telegram_alert", new_callable=AsyncMock
+        ) as mock_tg:
+            mock_tg.return_value = True
+
+            submit_res = await ac.post(
+                f"/f/{form_id}",
+                data={"name": "Олена", "message": "Привіт"},
+                follow_redirects=False,
+            )
+
+            assert submit_res.status_code == 303
+            assert submit_res.headers["location"] == "/success"
+            assert mock_tg.called
 
 
 @pytest.mark.asyncio

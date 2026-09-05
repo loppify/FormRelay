@@ -17,7 +17,7 @@ router = APIRouter()
 
 @router.post("/f/{form_id}")
 async def handle_form_submission(
-        form_id: uuid.UUID, request: Request, db: Annotated[AsyncSession, Depends(get_db)]
+    form_id: uuid.UUID, request: Request, db: Annotated[AsyncSession, Depends(get_db)]
 ):
     query = select(Form).where(Form.id == form_id)
     result = await db.execute(query)
@@ -29,7 +29,9 @@ async def handle_form_submission(
         )
 
     translations = load_translations(form_obj.language)
-    t = lambda key: translations.get(key, key)
+
+    def t(key: str) -> str:
+        return translations.get(key, key)
 
     content_type = request.headers.get("content-type", "")
 
