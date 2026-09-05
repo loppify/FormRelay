@@ -1,23 +1,23 @@
 import json
 import uuid
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Annotated
 
-
+from app.core.i18n import load_translations
 from app.database.models import Form, Submission
 from app.database.session import get_db
-from app.services.telegram import send_telegram_alert, format_submission_message
+from app.services.telegram import format_submission_message, send_telegram_alert
 
 router = APIRouter()
 
 
 @router.post("/f/{form_id}")
 async def handle_form_submission(
-    form_id: uuid.UUID, request: Request, db: Annotated[AsyncSession, Depends(get_db)]
+        form_id: uuid.UUID, request: Request, db: Annotated[AsyncSession, Depends(get_db)]
 ):
     query = select(Form).where(Form.id == form_id)
     result = await db.execute(query)
@@ -28,7 +28,11 @@ async def handle_form_submission(
             status_code=status.HTTP_404_NOT_FOUND, detail="Form endpoint not found"
         )
 
+    translations = load_translations(form_obj.language)
+    t = lambda key: translations.get(key, key)
+
     content_type = request.headers.get("content-type", "")
+
     data: dict = {}
 
     if "application/json" in content_type:
@@ -51,7 +55,7 @@ async def handle_form_submission(
     db.add(submission)
     await db.commit()
 
-    msg_text = format_submission_message(form_obj.title, data)
+    msg_text = format_submission_message(form_obj.title, data, t=t)
     await send_telegram_alert(form_obj.telegram_chat_id, msg_text)
 
     accept = request.headers.get("accept", "")

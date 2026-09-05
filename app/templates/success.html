@@ -1,20 +1,62 @@
 <!doctype html>
-<html lang="uk">
+<html lang="{{ language }}">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Дякуємо! Заявку прийнято</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>{{ t("thank_you_page_title") }}</title>
+
     <link rel="stylesheet" href="/static/style.css">
 </head>
+
 <body>
-<main class="container">
-    <div class="card" style="text-align: center;">
-        <h1>Повідомлення надіслано</h1>
-        <p>Ваша заявка успішно зареєстрована та надіслана власнику сайту</p>
-        <a href="javascript:history.back()" class="button">Повернутися назад</a>
-    </div>
-</main>
+
+<div class="success-page">
+
+    <main class="success-card">
+
+        <div class="success-icon">
+            <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+            >
+                <path d="M20 6 9 17l-5-5"/>
+            </svg>
+        </div>
+
+
+        <div class="success-content">
+
+            <span class="success-label">
+                FormRelay
+            </span>
+
+            <h1>
+                {{ t("thank_you_title") }}
+            </h1>
+
+            <p>
+                {{ t("thank_you_description") }}
+            </p>
+
+        </div>
+
+
+        <a
+            href="javascript:window.close()"
+            class="back-button"
+        >
+            <span>←</span>
+            <span>{{ t("go_back") }}</span>
+        </a>
+
+    </main>
+
+</div>
+
 </body>
 </html>

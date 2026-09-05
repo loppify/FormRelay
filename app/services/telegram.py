@@ -1,6 +1,11 @@
 import html
 import logging
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Callable
+
 import httpx
+
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -10,21 +15,45 @@ http_client = httpx.AsyncClient(
     limits=httpx.Limits(max_keepalive_connections=20, max_connections=50),
 )
 
+LOCALES_PATH = Path(__file__).resolve().parent.parent / "translations"
 
-def format_submission_message(from_title: str, payload: dict) -> str:
-    lines = [f"<b>Нова заявка. {html.escape(from_title)}</b>\n"]
+
+def format_submission_message(
+        form_title: str,
+        payload: dict,
+        t: Callable[[str], str]
+) -> str:
+    current_time = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+
+    lines = [
+        f"⚡ <b>{t('tg_new_submission')}</b>",
+        f"{t('tg_form')}: <b>{html.escape(form_title)}</b>",
+        f"{t('tg_time')}: <code>{current_time}</code>",
+        "—" * 15,
+        "",
+    ]
+
     for key, val in payload.items():
         if key.startswith("_"):
             continue
-        clean_key = html.escape(str(key))
-        clean_val = html.escape(str(val))
-        lines.append(f"<b>{clean_key}:</b> {clean_val}\n")
+
+        raw_key = str(key).strip().replace("_", " ").title()
+        raw_val = str(val).strip()
+
+        clean_key = html.escape(raw_key)
+        clean_val = html.escape(raw_val)
+
+        lines.append(f"• <b>{clean_key}:</b> <code>{clean_val}</code>")
+
+    lines.append("")
+    lines.append("—" * 15)
+    lines.append(f"<i>{t('tg_footer')}</i>")
+
     return "\n".join(lines)
 
 
 async def send_telegram_alert(chat_id: int, message: str) -> bool:
     url = f"https://api.telegram.org/bot{settings.TELEGRAM_BOT_TOKEN}/sendMessage"
-    print(settings.TELEGRAM_BOT_TOKEN)
     payload = {
         "chat_id": chat_id,
         "text": message,
@@ -47,6 +76,9 @@ async def send_telegram_alert(chat_id: int, message: str) -> bool:
             f"Status {response.status_code}, Body: {response.text}"
         )
         return False
+
     except httpx.RequestError as exc:
-        logger.error(f"Network error while sending Telegram message to {chat_id}: {exc}")
+        logger.error(
+            f"Network error while sending Telegram message to {chat_id}: {exc}"
+        )
         return False

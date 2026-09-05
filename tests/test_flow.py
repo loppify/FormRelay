@@ -1,5 +1,6 @@
 import uuid
 from unittest.mock import AsyncMock, patch
+
 import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -11,7 +12,9 @@ from app.main import app
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
 engine = create_async_engine(TEST_DATABASE_URL)
-TestSessionLocal = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
+TestSessionLocal = async_sessionmaker(
+    engine, expire_on_commit=False, class_=AsyncSession
+)
 
 
 async def override_get_db():
@@ -42,7 +45,9 @@ async def test_form_creation_and_submission():
         assert create_res.status_code == 201
         form_id = create_res.json()["id"]
 
-        with patch("app.api.ingest.send_telegram_alert", new_callable=AsyncMock) as mock_tg:
+        with patch(
+            "app.api.ingest.send_telegram_alert", new_callable=AsyncMock
+        ) as mock_tg:
             mock_tg.return_value = True
 
             submit_res = await ac.post(

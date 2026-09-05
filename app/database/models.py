@@ -19,6 +19,7 @@ class Form(Base):
     )
     title: Mapped[str] = mapped_column(String(120), nullable=False)
     telegram_chat_id: Mapped[int] = mapped_column(BigInteger(), nullable=False)
+    language: Mapped[str] = mapped_column(String(5), default="en", nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
@@ -41,4 +42,3 @@ class Submission(Base):
     )
 
     form: Mapped[list["Form"]] = relationship(back_populates="submissions")
-
