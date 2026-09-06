@@ -20,17 +20,23 @@
 
         <nav class="language-switcher" aria-label="{{ t('language') }}">
             <a
-                href="/?lang=en"
-                {% if language == "en" %}aria-current="true"{% endif %}
+                    href="/?lang=en"
+                    {% if language== "en" %}aria-current="true"{% endif %}
             >
-                EN
+            EN
             </a>
 
             <a
-                href="/?lang=uk"
-                {% if language == "uk" %}aria-current="true"{% endif %}
+                    href="/?lang=uk"
+                    {% if language== "uk" %}aria-current="true"{% endif %}
             >
-                UA
+            UA
+            </a>
+            <a
+                    href="/?lang=de"
+                    {% if language== "de" %}aria-current="true"{% endif %}
+            >
+            DE
             </a>
         </nav>
     </header>
@@ -56,17 +62,17 @@
             <p class="hero-help">
                 {{ t("bot_help") }}
                 <a
-                    href="https://t.me/formrelay1_bot"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                        href="https://t.me/formrelay1_bot"
+                        target="_blank"
+                        rel="noopener noreferrer"
                 >
                     {{ t("bot") }}
                 </a>.
                 {{ t("or_contact") }}
                 <a
-                    href="https://t.me/nero_lt"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                        href="https://t.me/nero_lt"
+                        target="_blank"
+                        rel="noopener noreferrer"
                 >
                     {{ t("direct_message") }}
                 </a>.
@@ -94,12 +100,12 @@
                     </label>
 
                     <input
-                        type="text"
-                        name="title"
-                        id="title"
-                        placeholder="{{ t('form_title_placeholder') }}"
-                        autocomplete="off"
-                        required
+                            type="text"
+                            name="title"
+                            id="title"
+                            placeholder="{{ t('form_title_placeholder') }}"
+                            autocomplete="off"
+                            required
                     >
                 </div>
 
@@ -109,21 +115,21 @@
                         {{ t("telegram_chat_id") }}
 
                         <a
-                            href="https://t.me/userinfobot"
-                            target="_blank"
-                            rel="noopener noreferrer"
+                                href="https://t.me/userinfobot"
+                                target="_blank"
+                                rel="noopener noreferrer"
                         >
                             {{ t("find_chat_id") }}
                         </a>
                     </label>
 
                     <input
-                        type="text"
-                        id="chat_id"
-                        placeholder="{{ t('chat_id_placeholder') }}"
-                        inputmode="numeric"
-                        autocomplete="off"
-                        required
+                            type="text"
+                            id="chat_id"
+                            placeholder="{{ t('chat_id_placeholder') }}"
+                            inputmode="numeric"
+                            autocomplete="off"
+                            required
                     >
                 </div>
 
@@ -131,9 +137,9 @@
 
 
             <button
-                id="create-btn"
-                class="primary-button"
-                onclick="createEndpoint()"
+                    id="create-btn"
+                    class="primary-button"
+                    onclick="createEndpoint()"
             >
                 <span>{{ t("create_endpoint") }}</span>
                 <span class="button-arrow">→</span>
@@ -172,8 +178,8 @@
 
 
             <button
-                class="secondary-button"
-                onclick="copySnippet()"
+                    class="secondary-button"
+                    onclick="copySnippet()"
             >
                 <span>{{ t("copy_code") }}</span>
                 <span>⧉</span>
@@ -193,9 +199,9 @@
 
 
                 <form
-                    id="live-test-form"
-                    method="POST"
-                    target="_blank"
+                        id="live-test-form"
+                        method="POST"
+                        target="_blank"
                 >
 
                     <div class="test-fields">
@@ -204,10 +210,10 @@
                             {{ t("test_name") }}
 
                             <input
-                                type="text"
-                                name="name"
-                                value="{{ t('test_name_value') }}"
-                                required
+                                    type="text"
+                                    name="name"
+                                    value="{{ t('test_name_value') }}"
+                                    required
                             >
                         </label>
 
@@ -215,10 +221,10 @@
                             {{ t("test_phone") }}
 
                             <input
-                                type="text"
-                                name="phone"
-                                value="{{ t('test_phone_value') }}"
-                                required
+                                    type="text"
+                                    name="phone"
+                                    value="{{ t('test_phone_value') }}"
+                                    required
                             >
                         </label>
 
