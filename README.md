@@ -1,407 +1,162 @@
-# ⚡ FormRelay
+# FormRelay
 
-> **Turn any HTML form into a Telegram-powered backend in seconds.**
+Receive submissions from a static HTML form in Telegram.
 
-FormRelay is a lightweight **headless form backend** for static websites, landing pages, portfolios, and small projects.
+FormRelay is a small form backend for landing pages, portfolios, and other static websites. It creates a form endpoint, stores incoming submissions in PostgreSQL, and attempts to send each submission to a configured Telegram chat.
 
-* No custom backend.
-* No SMTP configuration.
-* No user accounts.
-* No JavaScript framework.
+This is a personal MVP by [Rostyslav Tarasov](https://github.com/loppify). The initial version focuses on one workflow: create an endpoint, add it to a website, and receive enquiries in Telegram.
 
-Just create a form endpoint, point your HTML `<form>` at it, and receive submissions directly in **Telegram**.
+[Hosted MVP](https://formrelay-5ysr.onrender.com/) · [Issues](https://github.com/loppify/FormRelay/issues)
 
----
+## What it does
 
-## ✨ Why FormRelay?
+- Creates UUID-based form endpoints without requiring an account.
+- Accepts JSON objects and ordinary HTML form fields, including text fields submitted as multipart form data.
+- Stores submissions and their timestamps in PostgreSQL.
+- Formats Telegram notifications with HTML-escaped field names and values.
+- Returns a JSON response or redirects the browser to a thank-you page.
+- Provides English, Ukrainian, and German interface translations.
+- Includes Docker configuration, automated flow tests, and a GitHub Actions workflow for linting, formatting, testing, and triggering deployment.
 
-Building a simple contact form shouldn't require building an entire backend.
+## Connect a website
 
-With FormRelay, your frontend can stay completely static:
+1. Open the hosted MVP.
+2. Start [the FormRelay bot](https://t.me/formrelay1_bot) so it can message your account.
+3. Enter a form title and the Telegram chat ID for the destination you control.
+4. Copy the generated endpoint into your form's `action` attribute.
+5. Send a test submission and check that the notification arrives.
 
 ```html
-<form action="https://your-formrelay-instance.com/f/YOUR_FORM_ID" method="POST">
-    <input name="name" placeholder="Your name" required>
-    <input name="email" type="email" placeholder="Email" required>
-    <textarea name="message" placeholder="Message" required></textarea>
-
-    <button type="submit">Send</button>
+<form action="https://formrelay-5ysr.onrender.com/f/YOUR_FORM_ID" method="post">
+  <label>
+    Name
+    <input name="name" required>
+  </label>
+  <label>
+    Email
+    <input name="email" type="email" required>
+  </label>
+  <label>
+    Message
+    <textarea name="message" required></textarea>
+  </label>
+  <button type="submit">Send</button>
 </form>
 ```
 
-That's it.
+Replace `YOUR_FORM_ID` with the generated UUID. Field names are flexible; a predefined contact-form schema is not required. Browser-side validation such as `required` does not replace server-side validation.
 
-FormRelay receives the submission, stores it, and sends a formatted notification to your Telegram chat.
+## API
 
----
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `POST` | `/api/forms` | Create a form endpoint |
+| `POST` | `/f/{form_id}` | Submit fields to an existing form |
+| `GET` | `/` | Open the setup interface |
+| `GET` | `/success` | Open the thank-you page |
 
-## 🚀 Features
-
-* 🪶 **Headless** - works with any frontend that can submit an HTTP request
-* ⚡ **Zero-config frontend** - just add a form `action`
-* 🆔 **UUID-based form endpoints** - no accounts required
-* 📦 **JSON & `multipart/form-data`** support
-* 🧩 **Arbitrary form fields** - no predefined schema required
-* 💬 **Telegram notifications** via Bot API
-* 💾 **Persistent submissions** stored in PostgreSQL
-* 🔄 **Automatic browser redirects** to a default thank-you page
-* 🐳 **Docker-ready**
-* ☁️ **Cloud deployment ready**
-* 🖥️ **Tiny server-rendered UI** - no SPA or build pipeline
-
----
-
-## 🎯 The idea
-
-FormRelay is built around one simple workflow:
-
-```text
-Your Website
-     │
-     │ POST
-     ▼
-┌─────────────┐
-│  FormRelay  │
-└──────┬──────┘
-       │
-       ├──────────────► PostgreSQL
-       │
-       └──────────────► Telegram
-```
-
-Your website doesn't need to know anything about servers, databases, or Telegram.
-
-It only needs an HTML form.
-
----
-
-## 🏁 Quick Start
-
-### 1. Create a FormRelay endpoint
-
-Open the FormRelay web interface and provide:
-
-* a name for your form
-* your Telegram `chat_id`
-
-FormRelay generates a unique endpoint for you.
-
-### 2. Add the endpoint to your website
-
-```html
-<form action="https://your-formrelay-instance.com/f/YOUR_FORM_ID" method="POST">
-    <input type="text" name="name" placeholder="Name">
-    <input type="email" name="email" placeholder="Email">
-    <textarea name="message" placeholder="Message"></textarea>
-
-    <button type="submit">Send</button>
-</form>
-```
-
-### 3. Submit the form
-
-FormRelay will:
-
-1. Parse the submitted fields
-2. Store the submission
-3. Send a notification to Telegram
-4. Redirect the browser to the default thank-you page
-
-Your backend is done.
-
----
-
-## 📡 API
-
-### Submit a form
-
-```http
-POST /f/{form_id}
-```
-
-The endpoint accepts both JSON and `multipart/form-data`.
-
-### JSON
+Create an endpoint on a local instance:
 
 ```bash
-curl -X POST \
-  https://your-formrelay-instance.com/f/YOUR_FORM_ID \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "John Doe",
-    "email": "john@example.com",
-    "message": "Hello from my website!"
-  }'
+curl -X POST http://127.0.0.1:8000/api/forms \
+  -H 'Content-Type: application/json' \
+  -d '{"title":"Portfolio","telegram_chat_id":123456789,"language":"en"}'
 ```
 
-### Multipart form data
+Replace the example chat ID with your own. The response includes the form's UUID in `id`.
+
+Submit JSON:
 
 ```bash
-curl -X POST \
-  https://your-formrelay-instance.com/f/YOUR_FORM_ID \
-  -F "name=John Doe" \
-  -F "email=john@example.com" \
-  -F "message=Hello from my website!"
+curl -X POST http://127.0.0.1:8000/f/YOUR_FORM_ID \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: application/json' \
+  -d '{"name":"Alex","email":"alex@example.com","message":"Project enquiry"}'
 ```
 
-Form fields are intentionally **schema-free**. You can send whatever fields your frontend needs.
+The response is `200` with a status and submission ID when the handler completes. Without `Accept: application/json`, the handler returns a `303` redirect to `/success`.
 
-For example:
+**Delivery behavior:** the database commit happens before the Telegram request. A successful HTTP response currently does not confirm Telegram delivery. Failed sends are logged, but delivery status and automatic recovery are not yet implemented.
 
-```json
-{
-    "name": "Alice",
-    "company": "Acme Inc.",
-    "email": "alice@example.com",
-    "subject": "Project inquiry",
-    "message": "I'd like to discuss a project."
-}
-```
+## Run locally
 
----
-
-## 💬 Telegram Notifications
-
-Every successful submission is formatted into a readable Telegram message and delivered through the Telegram Bot API.
-
-Example:
-
-```text
-Нова заявка: Portfolio Contact
-
-name: Alice
-
-email: alice@example.com
-
-company: Acme Inc.
-
-message: I'd like to discuss a project.
-
-```
-
-No SMTP server required.
-
----
-
-## 🛠️ Tech Stack
-
-FormRelay intentionally uses a small stack:
-
-| Component        | Technology             |
-| ---------------- | ---------------------- |
-| Language         | Python 3.12+           |
-| API              | FastAPI                |
-| Database         | PostgreSQL             |
-| ORM              | SQLAlchemy 2.x (Async) |
-| Migrations       | Alembic                |
-| HTTP Client      | HTTPX                  |
-| Templates        | Jinja2                 |
-| Server           | Uvicorn                |
-| Containerization | Docker                 |
-
-The project uses asynchronous I/O throughout the request and Telegram delivery pipeline.
-
----
-
-## 🐳 Self-hosting
-
-Clone the repository:
+Requirements: Python 3.12 or newer, [uv](https://docs.astral.sh/uv/), Docker with Compose, and a Telegram bot token.
 
 ```bash
 git clone https://github.com/loppify/FormRelay.git
 cd FormRelay
-```
-
-Install dependencies:
-
-```bash
 uv sync
 ```
 
-Or run the application using Docker:
+Create `.env` in the repository root:
+
+```dotenv
+DATABASE_URL=postgresql+asyncpg://postgres:password@localhost:5432/formrelay
+TELEGRAM_BOT_TOKEN=replace_with_your_bot_token
+BASE_URL=http://127.0.0.1:8000
+```
+
+The database credentials above match the included local Compose database. Start PostgreSQL and the application:
+
+```bash
+docker compose up -d db
+uv run uvicorn app.main:app --reload
+```
+
+Open [the application](http://127.0.0.1:8000/) or [API documentation](http://127.0.0.1:8000/docs). The current startup code creates missing tables with SQLAlchemy `create_all`; it does not migrate an existing schema.
+
+For a self-hosted instance, start your own bot before testing notifications. The landing page currently links to the hosted FormRelay bot; update that link when using a different bot.
+
+### Running both services in Docker
+
+Set the database host in `.env` to `db`:
+
+```dotenv
+DATABASE_URL=postgresql+asyncpg://postgres:password@db:5432/formrelay
+```
+
+Before using the complete Compose setup, align the Dockerfile's Python base image with the project's Python 3.12+ requirement and correct `poastgres` to `postgres` in the database health-check command.
 
 ```bash
 docker compose up --build
 ```
 
-The exact environment variables and deployment configuration are intentionally kept simple and will evolve together with the MVP.
+These configuration adjustments are needed in the current repository. The local Python workflow above avoids building the application image.
 
----
-
-## ⚙️ Configuration
-
-FormRelay uses environment variables for runtime configuration.
-
-Typical configuration includes:
-
-```env
-DATABASE_URL=postgresql+asyncpg://user:password@localhost/formrelay
-
-TELEGRAM_BOT_TOKEN=your_bot_token
-```
-
-> **Never commit your Telegram bot token or database credentials to Git.**
-
----
-
-## 🧪 Development
-
-Install dependencies:
-
-```bash
-uv sync
-```
-
-Run the development server:
-
-```bash
-uv run uvicorn formrelay.main:app --reload
-```
-
-Run tests:
+## Development
 
 ```bash
 uv run pytest
-```
-
-Run linting:
-
-```bash
 uv run ruff check .
+uv run ruff format --check .
 ```
 
----
+The flow tests use an in-memory SQLite database and mock Telegram delivery. They cover form creation with a JSON submission, an HTML-form redirect, and an unknown form ID. They do not establish production PostgreSQL behavior or delivery reliability during Telegram failures.
 
-## 📂 Project Structure
+| Location | Responsibility |
+| --- | --- |
+| `app/api/` | Form creation and submission routes |
+| `app/database/` | SQLAlchemy models and async sessions |
+| `app/services/telegram.py` | Notification formatting and delivery |
+| `app/core/` | Configuration and localization |
+| `app/templates/`, `app/static/` | Server-rendered interface |
+| `app/translations/` | Interface and notification translations |
+| `tests/` | Automated flow tests |
 
-```text
-FormRelay/
-├── app/
-├── src/
-│   └── formrelay/
-├── tests/
-├── Dockerfile
-├── docker-compose.yml
-├── render.yaml
-├── pyproject.toml
-├── uv.lock
-└── README.md
-```
+## Current boundaries
 
-The project follows a small, modular architecture so the MVP can evolve without turning into a monolith.
+- File uploads are not supported. Send text fields or JSON objects.
+- Payload validation and application-level limits are basic.
+- Destination ownership verification, rate limiting, and spam protection are not implemented.
+- There is no account dashboard, submission-management API, billing, or custom redirect configuration.
+- Alembic is a dependency, but a migration history has not been added.
 
----
+The next development priorities are reliable delivery, verified destinations, input boundaries, and reproducible database changes. Further features will depend on feedback from people using the product.
 
-## 🔒 MVP Scope
+## Feedback
 
-FormRelay is intentionally small.
+For a bug report, include the expected result, the observed behavior, and a reproducible example with personal data and credentials removed. For a feature request, describe the form workflow you are trying to support.
 
-### Included
+## License
 
-* Anonymous form creation
-* UUID-based endpoints
-* JSON submissions
-* `multipart/form-data` submissions
-* Dynamic form fields
-* PostgreSQL persistence
-* Telegram notifications
-* Default thank-you redirect
-* Docker deployment
-
-### Not included yet
-
-* User accounts
-* Authentication / JWT
-* Custom redirect URLs
-* File uploads
-* CAPTCHA / Turnstile
-* Spam protection
-* CSV / Excel / Google Sheets exports
-* Billing and subscriptions
-* Usage limits
-
-These features may come later. The MVP focuses on one thing:
-
-> **Make a static HTML form send a message to Telegram with as little friction as possible.**
-
----
-
-## 🗺️ Roadmap
-
-### `v0.1 - MVP`
-
-* [x] Core FastAPI application
-* [x] Form endpoints
-* [x] PostgreSQL persistence
-* [x] Telegram integration
-* [x] JSON input
-* [x] Multipart input
-* [x] Docker setup
-* [x] Public MVP release
-* [ ] End-to-end production testing
-
-### `v0.2 - Reliability`
-
-* [ ] Better error handling
-* [ ] Submission delivery status
-* [ ] Basic request validation
-* [ ] Improved Telegram formatting
-* [ ] Health checks
-* [ ] Observability
-
-### `v0.3 - Protection`
-
-* [ ] Rate limiting
-* [ ] Spam protection
-* [ ] Origin/domain restrictions
-* [ ] Abuse prevention
-
-### `v1.0 - Micro-SaaS`
-
-* [ ] User accounts
-* [ ] Form management dashboard
-* [ ] Multiple forms per user
-* [ ] Usage limits
-* [ ] Custom redirects
-* [ ] Subscription plans
-
----
-
-## 🤝 Contributing
-
-FormRelay is currently an early-stage project.
-
-Issues, ideas, bug reports, and pull requests are welcome.
-
-If you find something broken, open an issue with:
-
-* what you expected
-* what actually happened
-* steps to reproduce
-* relevant logs or request payloads
-
----
-
-## 📄 License
-
-See the repository for the current license information.
-
----
-
-## 💡 Philosophy
-
-FormRelay follows a simple principle:
-
-**Your landing page shouldn't need a backend just to have a contact form.**
-
-Keep the frontend static.
-Keep the backend tiny.
-Send the leads where you actually read them.
-
-**Create - Copy - Deploy - Receive.**
-
----
-
-<p align="center">
-  Built with Python, FastAPI and a slightly unhealthy love for simple backends.
-</p>
+[GNU Affero General Public License v3.0](LICENSE).
