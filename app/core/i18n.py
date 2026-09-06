@@ -5,7 +5,7 @@ from pathlib import Path
 
 from fastapi import Request
 
-SUPPORTED_LANGUAGES = {"en", "uk"}
+SUPPORTED_LANGUAGES = {"en", "uk", "de"}
 DEFAULT_LANGUAGE = "en"
 
 TRANSLATIONS_DIR = Path(__file__).resolve().parent.parent / "translations"
