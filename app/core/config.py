@@ -6,9 +6,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 
 class Settings(BaseSettings):
-    DATABASE_URL: str = (
-        "postgresql+asyncpg://postgres:password@localhost:5432/formrelay"
-    )
+    DATABASE_URL: str = "postgresql+asyncpg://postgres:password@localhost:5432/ackvia"
     TELEGRAM_BOT_TOKEN: str | None = None
     BASE_URL: str = "http://127.0.0.1:8000"
 

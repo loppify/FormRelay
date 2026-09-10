@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.i18n import SUPPORTED_LANGUAGES, get_locale
-from app.database.models import Form
+from app.database.models import Destination, Form
 from app.database.session import get_db
 
 router = APIRouter(prefix="/api/forms", tags=["forms"])
@@ -14,13 +14,12 @@ router = APIRouter(prefix="/api/forms", tags=["forms"])
 
 class FormCreate(BaseModel):
     title: str
-    telegram_chat_id: int
     language: str = "en"
+    telegram_chat_id: int
 
 
 class FormRead(BaseModel):
     title: str
-    telegram_chat_id: int
     id: uuid.UUID
 
     model_config = ConfigDict(from_attributes=True)
@@ -37,10 +36,15 @@ async def create_form_endpoint(
 
     new_form = Form(
         title=data.title,
-        telegram_chat_id=data.telegram_chat_id,
         language=lang,
     )
+    destination = Destination(
+        form=new_form,
+        type="telegram",
+        reference=str(data.telegram_chat_id),
+    )
     db.add(new_form)
+    db.add(destination)
     await db.commit()
     await db.refresh(new_form)
     return new_form

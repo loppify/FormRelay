@@ -6,9 +6,10 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.core.i18n import load_translations
-from app.database.models import Form, Submission
+from app.database.models import Delivery, DeliveryStatus, Form, Submission
 from app.database.session import get_db
 from app.services.telegram import format_submission_message, send_telegram_alert
 
@@ -19,8 +20,9 @@ router = APIRouter()
 async def handle_form_submission(
     form_id: uuid.UUID, request: Request, db: Annotated[AsyncSession, Depends(get_db)]
 ):
-    query = select(Form).where(Form.id == form_id)
-    result = await db.execute(query)
+    result = await db.execute(
+        select(Form).options(selectinload(Form.destinations)).where(Form.id == form_id)
+    )
     form_obj = result.scalar_one_or_none()
 
     if not form_obj:
@@ -34,8 +36,6 @@ async def handle_form_submission(
         return translations.get(key, key)
 
     content_type = request.headers.get("content-type", "")
-
-    data: dict = {}
 
     if "application/json" in content_type:
         try:
@@ -55,12 +55,35 @@ async def handle_form_submission(
 
     submission = Submission(form_id=form_obj.id, payload=data)
     db.add(submission)
+    await db.flush()
+
+    deliveries = [
+        Delivery(
+            submission_id=submission.id,
+            destination_id=destination.id,
+            status=DeliveryStatus.PENDING,
+        )
+        for destination in form_obj.destinations
+    ]
+    db.add_all(deliveries)
+
     await db.commit()
 
     msg_text = format_submission_message(form_obj.title, data, t=t)
-    await send_telegram_alert(form_obj.telegram_chat_id, msg_text)
 
+    for delivery in deliveries:
+        destination = delivery.destination
+
+        if destination.type == "telegram":
+            succeeded = await send_telegram_alert(int(destination.reference), msg_text)
+            delivery.status = (
+                DeliveryStatus.SUCCEEDED if succeeded else DeliveryStatus.FAILED
+            )
+            await db.commit()
+
+    await db.commit()
     accept = request.headers.get("accept", "")
+
     if "application/json" in accept:
         return JSONResponse(
             content={"status": "success", "id": submission.id},

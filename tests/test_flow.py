@@ -1,11 +1,13 @@
 import uuid
+from unittest import result
 from unittest.mock import AsyncMock, patch
 
 import pytest
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from app.database.models import Base
+from app.database.models import Base, Delivery, DeliveryStatus, Destination, Form, Submission
 from app.database.session import get_db
 from app.main import app
 
@@ -108,3 +110,141 @@ async def test_invalid_form_uuid():
             headers={"Accept": "application/json"},
         )
         assert res.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_delivery_state_succeeded():
+    transport = ASGITransport(app=app)
+
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        create_res = await ac.post(
+            "/api/forms",
+            json={
+                "title": "Landing Test",
+                "telegram_chat_id": 987654321,
+                "language": "en",
+            },
+        )
+
+        form_id = create_res.json()["id"]
+
+        with patch(
+            "app.api.ingest.send_telegram_alert", new_callable=AsyncMock
+        ) as mock_tg:
+            mock_tg.return_value = True
+
+            submit_res = await ac.post(
+                f"/f/{form_id}",
+                json={"client_name": "Ivan", "phone": "+380501112233"},
+                headers={"Accept": "application/json"},
+            )
+
+        assert submit_res.status_code == 200
+
+    async with TestSessionLocal() as session:
+        result = await session.execute(select(Delivery))
+        delivery = result.scalar_one()
+
+        assert delivery.status == DeliveryStatus.SUCCEEDED
+        assert delivery.destination.type == "telegram"
+        assert delivery.destination.reference == "987654321"
+
+    async with TestSessionLocal() as session:
+        result = await session.execute(select(Destination))
+        destination = result.scalar_one()
+
+        assert destination.type == "telegram"
+        assert destination.reference == "987654321"
+
+
+@pytest.mark.asyncio
+async def test_delivery_state_failed():
+    transport = ASGITransport(app=app)
+
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        create_res = await ac.post(
+            "/api/forms",
+            json={
+                "title": "Landing Test",
+                "telegram_chat_id": 987654321,
+                "language": "en",
+            },
+        )
+
+        form_id = create_res.json()["id"]
+
+        with patch(
+            "app.api.ingest.send_telegram_alert", new_callable=AsyncMock
+        ) as mock_tg:
+            mock_tg.return_value = False
+
+            submit_res = await ac.post(
+                f"/f/{form_id}",
+                json={"client_name": "Ivan", "phone": "+380501112233"},
+                headers={"Accept": "application/json"},
+            )
+
+        assert submit_res.status_code == 200
+
+    async with TestSessionLocal() as session:
+        result = await session.execute(select(Delivery))
+        delivery = result.scalar_one()
+
+        assert delivery.status == DeliveryStatus.FAILED
+
+@pytest.mark.asyncio
+async def test_delivery_states_are_independent():
+    async with TestSessionLocal() as session:
+        form = Form(
+            title="Landing Test",
+            language="en",
+        )
+
+        destination_a = Destination(
+            form=form,
+            type="telegram",
+            reference="987654321",
+        )
+        destination_b = Destination(
+            form=form,
+            type="telegram",
+            reference="987654321",
+        )
+        destination_c = Destination(
+            form=form,
+            type="telegram",
+            reference="987654321",
+        )
+        submission = Submission(
+            form=form,
+            payload={"name": "Ivan"}
+        )
+        delivery_a = Delivery(
+            submission=submission,
+            destination=destination_a
+        )
+        delivery_b = Delivery(
+            submission=submission,
+            destination=destination_b
+        )
+        delivery_c = Delivery(
+            submission=submission,
+            destination=destination_c
+        )
+        session.add(form)
+        await session.commit()
+
+        delivery_a.status = DeliveryStatus.SUCCEEDED
+        delivery_b.status = DeliveryStatus.FAILED
+        delivery_c.status = DeliveryStatus.PENDING
+
+        await session.commit()
+
+        result = await session.execute(select(Delivery).where(Delivery.submission_id == submission.id))
+
+        deliverys = result.scalars().all()
+
+        assert len(deliverys) == 3
+        assert deliverys[0].status == DeliveryStatus.SUCCEEDED
+        assert deliverys[1].status == DeliveryStatus.FAILED
+        assert deliverys[2].status == DeliveryStatus.PENDING
