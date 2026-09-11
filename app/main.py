@@ -12,18 +12,16 @@ from app.core.i18n import (
     SUPPORTED_LANGUAGES,
     get_locale,
 )
-from app.database.session import init_db
 from app.services.telegram import http_client
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await init_db()
     yield
     await http_client.aclose()
 
 
-app = FastAPI(title="FormRelay", lifespan=lifespan)
+app = FastAPI(title="Ackvia", lifespan=lifespan)
 
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 templates = Jinja2Templates(directory="app/templates")
