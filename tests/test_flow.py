@@ -1,10 +1,10 @@
 import uuid
-from unittest import result
 from unittest.mock import AsyncMock, patch
 
 import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.database.models import Base, Delivery, DeliveryStatus, Destination, Form, Submission
@@ -52,7 +52,7 @@ async def test_form_creation_and_json_submission():
         form_id = create_res.json()["id"]
 
         with patch(
-            "app.api.ingest.send_telegram_alert", new_callable=AsyncMock
+                "app.api.ingest.send_telegram_alert", new_callable=AsyncMock
         ) as mock_tg:
             mock_tg.return_value = True
 
@@ -84,7 +84,7 @@ async def test_form_submission_html_redirect():
         form_id = create_res.json()["id"]
 
         with patch(
-            "app.api.ingest.send_telegram_alert", new_callable=AsyncMock
+                "app.api.ingest.send_telegram_alert", new_callable=AsyncMock
         ) as mock_tg:
             mock_tg.return_value = True
 
@@ -129,7 +129,7 @@ async def test_delivery_state_succeeded():
         form_id = create_res.json()["id"]
 
         with patch(
-            "app.api.ingest.send_telegram_alert", new_callable=AsyncMock
+                "app.api.ingest.send_telegram_alert", new_callable=AsyncMock
         ) as mock_tg:
             mock_tg.return_value = True
 
@@ -174,7 +174,7 @@ async def test_delivery_state_failed():
         form_id = create_res.json()["id"]
 
         with patch(
-            "app.api.ingest.send_telegram_alert", new_callable=AsyncMock
+                "app.api.ingest.send_telegram_alert", new_callable=AsyncMock
         ) as mock_tg:
             mock_tg.return_value = False
 
@@ -191,6 +191,7 @@ async def test_delivery_state_failed():
         delivery = result.scalar_one()
 
         assert delivery.status == DeliveryStatus.FAILED
+
 
 @pytest.mark.asyncio
 async def test_delivery_states_are_independent():
