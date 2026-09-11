@@ -1,6 +1,6 @@
 {
-  "page_title": "FormRelay — бекенд для вас",
-  "hero_title": "FormRelay",
+  "page_title": "Ackvia — бекенд для вас",
+  "hero_title": "Ackvia",
   "hero_description": "Отримуйте заявки з HTML-форм прямо в Telegram за 30 секунд.",
   "bot_help": "Якщо не працює, запустіть",
   "bot": "бота",
@@ -36,5 +36,5 @@
   "tg_new_submission": "Нова заявка",
   "tg_form": "Форма",
   "tg_time": "Час",
-  "tg_footer": "Сповіщення FormRelay"
+  "tg_footer": "Сповіщення Ackvia"
 }

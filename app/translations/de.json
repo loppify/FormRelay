@@ -1,6 +1,6 @@
 {
-  "page_title": "FormRelay - Backend für Sie",
-  "hero_title": "FormRelay",
+  "page_title": "Ackvia - Backend für Sie",
+  "hero_title": "Ackvia",
   "hero_description": "Erhalten Sie Anfragen aus HTML-Formularen direkt in Telegram in 30 Sekunden.",
   "bot_help": "Wenn es nicht funktioniert, starten Sie den",
   "bot": "Bot",
@@ -37,5 +37,5 @@
   "tg_new_submission": "Neue Anfrage",
   "tg_form": "Formular",
   "tg_time": "Uhrzeit",
-  "tg_footer": "FormRelay-Benachrichtigung"
+  "tg_footer": "Ackvia-Benachrichtigung"
 }
