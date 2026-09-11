@@ -5,10 +5,12 @@ from typing import Any
 
 from sqlalchemy import (
     JSON,
+    CheckConstraint,
     DateTime,
     ForeignKey,
     Integer,
     String,
+    UniqueConstraint,
     func,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
@@ -25,6 +27,26 @@ class DeliveryStatus(str, enum.Enum):
     PENDING = "pending"
     SUCCEEDED = "succeeded"
     FAILED = "failed"
+    UNKNOWN = "unknown"
+    AWAITING_RETRY = "awaiting_retry"
+
+
+class FailureType(str, enum.Enum):
+    PERMANENT = "permanent"
+    RETRIES_EXHAUSTED = "retries_exhausted"
+
+
+class DeliveryAttemptResult(str, enum.Enum):
+    SUCCEEDED = "succeeded"
+    RETRYABLE_FAILURE = "retryable_failure"
+    PERMANENT_FAILURE = "permanent_failure"
+    UNKNOWN = "unknown"
+
+
+class DeliveryTrigger(str, enum.Enum):
+    AUTOMATIC = "automatic"
+    RETRY = "retry"
+    MANUAL_REPLAY = "manual_replay"
 
 
 class Base(DeclarativeBase):
@@ -72,6 +94,19 @@ class Submission(Base):
 
 
 class Delivery(Base):
+    __table_args__ = (
+        UniqueConstraint(
+            "submission_id", "destination_id", name="uq_delivery_submission_destination"
+        ),
+        CheckConstraint(
+            """
+            (status = 'FAILED' AND failure_type IS NOT NULL)
+            OR
+            (status != 'FAILED' AND failure_type IS NULL)
+            """,
+            name="ck_delivery_failure_type",
+        ),
+    )
     submission_id: Mapped[int] = mapped_column(
         ForeignKey("submissions.id", ondelete="CASCADE"), nullable=False
     )
@@ -80,11 +115,32 @@ class Delivery(Base):
     )
 
     status: Mapped[DeliveryStatus] = mapped_column(
-        nullable=False, default=DeliveryStatus.PENDING, server_default="PENDING"
+        nullable=False, default=DeliveryStatus.PENDING
+    )
+    attempt_count: Mapped[int] = mapped_column(default=0, nullable=False)
+    next_retry_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    failure_type: Mapped[FailureType | None] = mapped_column(default=None)
+    last_error: Mapped[str | None] = mapped_column(String, nullable=True)
+    delivered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    external_reference: Mapped[str | None] = mapped_column(String(255))
+    submission: Mapped["Submission"] = relationship(back_populates="deliveries")
+    destination: Mapped["Destination"] = relationship(
+        lazy="selectin", back_populates="deliveries"
+    )
+    attempts: Mapped[list["DeliveryAttempt"]] = relationship(
+        back_populates="delivery", cascade="all, delete-orphan", lazy="selectin"
     )
 
-    submission: Mapped["Submission"] = relationship(back_populates="deliveries")
-    destination: Mapped["Destination"] = relationship(lazy="selectin")
+
+class DeliveryAttempt(Base):
+    delivery_id: Mapped[int] = mapped_column(
+        ForeignKey("deliverys.id", ondelete="CASCADE")
+    )
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    result: Mapped[DeliveryAttemptResult | None]
+    error: Mapped[str | None] = mapped_column(String, nullable=True)
+    trigger: Mapped[DeliveryTrigger] = mapped_column(default=DeliveryTrigger.AUTOMATIC)
+    delivery: Mapped["Delivery"] = relationship(back_populates="attempts")
 
 
 class Destination(Base):
@@ -97,3 +153,4 @@ class Destination(Base):
 
     reference: Mapped[str] = mapped_column(String(255), nullable=False)
     form: Mapped["Form"] = relationship(back_populates="destinations")
+    deliveries: Mapped[list["Delivery"]] = relationship(back_populates="destination")
