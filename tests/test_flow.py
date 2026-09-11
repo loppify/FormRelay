@@ -4,10 +4,16 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from app.database.models import Base, Delivery, DeliveryStatus, Destination, Form, Submission
+from app.database.models import (
+    Base,
+    Delivery,
+    DeliveryStatus,
+    Destination,
+    Form,
+    Submission,
+)
 from app.database.session import get_db
 from app.main import app
 
@@ -52,7 +58,7 @@ async def test_form_creation_and_json_submission():
         form_id = create_res.json()["id"]
 
         with patch(
-                "app.api.ingest.send_telegram_alert", new_callable=AsyncMock
+            "app.api.ingest.send_telegram_alert", new_callable=AsyncMock
         ) as mock_tg:
             mock_tg.return_value = True
 
@@ -84,7 +90,7 @@ async def test_form_submission_html_redirect():
         form_id = create_res.json()["id"]
 
         with patch(
-                "app.api.ingest.send_telegram_alert", new_callable=AsyncMock
+            "app.api.ingest.send_telegram_alert", new_callable=AsyncMock
         ) as mock_tg:
             mock_tg.return_value = True
 
@@ -129,7 +135,7 @@ async def test_delivery_state_succeeded():
         form_id = create_res.json()["id"]
 
         with patch(
-                "app.api.ingest.send_telegram_alert", new_callable=AsyncMock
+            "app.api.ingest.send_telegram_alert", new_callable=AsyncMock
         ) as mock_tg:
             mock_tg.return_value = True
 
@@ -174,7 +180,7 @@ async def test_delivery_state_failed():
         form_id = create_res.json()["id"]
 
         with patch(
-                "app.api.ingest.send_telegram_alert", new_callable=AsyncMock
+            "app.api.ingest.send_telegram_alert", new_callable=AsyncMock
         ) as mock_tg:
             mock_tg.return_value = False
 
@@ -216,22 +222,10 @@ async def test_delivery_states_are_independent():
             type="telegram",
             reference="987654321",
         )
-        submission = Submission(
-            form=form,
-            payload={"name": "Ivan"}
-        )
-        delivery_a = Delivery(
-            submission=submission,
-            destination=destination_a
-        )
-        delivery_b = Delivery(
-            submission=submission,
-            destination=destination_b
-        )
-        delivery_c = Delivery(
-            submission=submission,
-            destination=destination_c
-        )
+        submission = Submission(form=form, payload={"name": "Ivan"})
+        delivery_a = Delivery(submission=submission, destination=destination_a)
+        delivery_b = Delivery(submission=submission, destination=destination_b)
+        delivery_c = Delivery(submission=submission, destination=destination_c)
         session.add(form)
         await session.commit()
 
@@ -241,7 +235,9 @@ async def test_delivery_states_are_independent():
 
         await session.commit()
 
-        result = await session.execute(select(Delivery).where(Delivery.submission_id == submission.id))
+        result = await session.execute(
+            select(Delivery).where(Delivery.submission_id == submission.id)
+        )
 
         deliverys = result.scalars().all()
 
